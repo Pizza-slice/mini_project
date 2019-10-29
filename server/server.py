@@ -9,8 +9,8 @@ class Server:
         self.connected_client_list = []
 
     def initialize_socket(self):
-        self.server_socket.listen(0)
-        self.server_socket.bind(('0.0.0.0', 1920))
+        self.server_socket.bind(('0.0.0.0', 1902))
+        self.server_socket.listen(1)
 
     def connect_clients(self):
         """
@@ -24,9 +24,10 @@ class Server:
 
 def main():
     server = Server()
+    server.initialize_socket()
     while True:
         client_socket = server.connect_clients()
-        c = ClientHandler(client_socket, server)
+        c = ClientHandler(client_socket)
         c.start()
 
 

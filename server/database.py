@@ -20,36 +20,34 @@ class Database:
 
     def get_auth_code(self, username):
         command = "SELECT auth_code FROM account WHERE username=?"
-        self.cursor.execute(command, username)
+        self.cursor.execute(command, (username,))
         return self.cursor.fetchall()[0]
 
     def check_user(self, username, password):
         command = "SELECT username FROM account"
-        user_list = self.cursor.execute(command)
+        self.cursor.execute(command)
+        user_list = self.cursor.fetchall()
         if username not in user_list:
-            return False, "user missing"
+            return False, "username or password does not match"
         else:
             command = "SELECT password FROM account WHERE username=?"
-            self.cursor.execute(command, username)
+            self.cursor.execute(command, (username,))
             database_password = self.cursor.fetchall()[0]
             if database_password == password:
                 return True, "OK"
             else:
-                return False, "password doesn't match"
+                return False, "username or password does not match"
 
-    def create_user(self, info):
-        if not self.check_info(info):
-            return False, "missing info"
+    def create_user(self, username, passwrod):
+        if self.username_available(username):
+            command = """INSERT INTO account VALUES
+    (?,?,?,?)"""
+            self.cursor.execute(command,
+                                (self.get_new_id(), self.get_new_auth_code(), username, passwrod))
+            self.connection.commit()
+            return True, "success"
         else:
-            if self.username_available(info["username"]):
-                command = """INSERT INTO account VALUES
-        (?,?,?,?)"""
-                self.cursor.execute(command,
-                                    (self.get_new_id(), self.get_new_auth_code(), info["username"], info["password"]))
-                self.connection.commit()
-                return True, "success"
-            else:
-                return False, "user taken"
+            return False, "username taken"
 
     def get_new_id(self):
         command = "SELECT id FROM account"
@@ -103,11 +101,11 @@ class AsycDatabase:
     def create_database(self):
         self.database.create_database()
 
-    def create_user(self, info):
+    def create_user(self, username, passwrod):
         self.lock.acquire()
         for i in range(MAX_READ):
             self.semaphone_lock.acquire()
-        success, massage = self.database.create_user(info)
+        success, massage = self.database.create_user(username, passwrod)
         for i in range(MAX_READ):
             self.semaphone_lock.release()
         self.lock.release()
@@ -127,9 +125,8 @@ class AsycDatabase:
 
 
 def main():
-    d = Database("test.db")
+    d = AsycDatabase("database.db")
     d.create_database()
-    print(d.create_user({"username": "2lon is so cool", "password": "12345"}))
 
 
 if __name__ == '__main__':
