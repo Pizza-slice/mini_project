@@ -1,6 +1,7 @@
 import sqlite3
 import random
 import threading
+import string
 
 MAX_READ = 100
 
@@ -13,22 +14,42 @@ class Database:
 
     def create_database(self):
         command = """CREATE TABLE IF NOT EXISTS account
-        (id INTEGER PRIMARY KEY, username Text unique, password TEXT)"""
+        (id INTEGER PRIMARY KEY,auth_code TEXT unique, username Text unique, password TEXT)"""
         self.cursor.execute(command)
         self.connection.commit()
 
+    def get_auth_code(self, username):
+        command = "SELECT auth_code FROM account WHERE username=?"
+        self.cursor.execute(command, username)
+        return self.cursor.fetchall()[0]
+
+    def check_user(self, username, password):
+        command = "SELECT username FROM account"
+        user_list = self.cursor.execute(command)
+        if username not in user_list:
+            return False, "user missing"
+        else:
+            command = "SELECT password FROM account WHERE username=?"
+            self.cursor.execute(command, username)
+            database_password = self.cursor.fetchall()[0]
+            if database_password == password:
+                return True, "OK"
+            else:
+                return False, "password doesn't match"
+
     def create_user(self, info):
         if not self.check_info(info):
-            return "missing info"
+            return False, "missing info"
         else:
             if self.username_available(info["username"]):
                 command = """INSERT INTO account VALUES
-        (?,?,?)"""
-                self.cursor.execute(command, (self.get_new_id(), info["username"], info["password"]))
+        (?,?,?,?)"""
+                self.cursor.execute(command,
+                                    (self.get_new_id(), self.get_new_auth_code(), info["username"], info["password"]))
                 self.connection.commit()
-                return "success"
+                return True, "success"
             else:
-                return "user taken"
+                return False, "user taken"
 
     def get_new_id(self):
         command = "SELECT id FROM account"
@@ -38,6 +59,15 @@ class Database:
         while new_id in id_list:
             new_id = random.randint(1000000, 9999999)
         return new_id
+
+    def get_new_auth_code(self):
+        command = "SELECT auth_code FROM account"
+        new_auth_code = self.random_string()
+        self.cursor.execute(command)
+        code_list = self.cursor.fetchall()
+        while new_auth_code in code_list:
+            new_auth_code = self.random_string()
+        return new_auth_code
 
     def username_available(self, username):
         command = "SELECT username FROM account"
@@ -57,6 +87,12 @@ class Database:
                 return False
         return True
 
+    @staticmethod
+    def random_string(string_length=10):
+        """Generate a random string of fixed length """
+        letters = string.ascii_letters + string.digits
+        return ''.join(random.choice(letters) for i in range(string_length))
+
 
 class AsycDatabase:
     def __init__(self, file_name):
@@ -71,10 +107,23 @@ class AsycDatabase:
         self.lock.acquire()
         for i in range(MAX_READ):
             self.semaphone_lock.acquire()
-        self.database.create_user(info)
+        success, massage = self.database.create_user(info)
         for i in range(MAX_READ):
             self.semaphone_lock.release()
         self.lock.release()
+        return success, massage
+
+    def check_user(self, username, password):
+        self.semaphone_lock.acquire()
+        success, massage = self.database.check_user(username, password)
+        self.semaphone_lock.release()
+        return success, massage
+
+    def get_auth_code(self, username):
+        self.semaphone_lock.acquire()
+        auth_code = self.database.get_auth_code(username)
+        self.semaphone_lock.release()
+        return auth_code
 
 
 def main():
