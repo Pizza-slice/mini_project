@@ -33,6 +33,12 @@ class ClientHandler(threading.Thread):
                 self.send_data_to_client(json.dumps({"type": "failed", "massage": massage}).encode())
             else:
                 self.send_data_to_client(json.dumps({"type": "success", "massage": massage}).encode())
+        if json_data["type"] == "get-id-list":
+            account_database = database.AsycDatabase("database.db")
+            authenticated, id = account_database.authentication_user(json_data["auth_code"])
+            if authenticated:
+
+
 
 
 def main():

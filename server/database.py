@@ -45,7 +45,7 @@ class Database:
             self.cursor.execute(command,
                                 (self.get_new_id(), self.get_new_auth_code(), username, passwrod))
             self.connection.commit()
-            return True, "success"
+            return True, "user created successfully"
         else:
             return False, "username taken"
 
@@ -75,6 +75,21 @@ class Database:
             return False
         else:
             return True
+
+    def authentication_user(self, auth_code):
+        command = "SELECT auth_code FROM account"
+        self.cursor.execute(command)
+        auth_code_list = self.cursor.fetchall()
+        if auth_code in auth_code_list:
+            command = "SELCET id FROM account WHERE=?"
+            self.cursor.execute(command, (auth_code,))
+            id = self.cursor.fetchall()[0]
+            return True, id
+        else:
+            return False, None
+
+    def get_id_list(self, auth_code):
+        command = "SELECT id FROM "
 
     @staticmethod
     def check_info(info):

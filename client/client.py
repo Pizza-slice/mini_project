@@ -36,7 +36,10 @@ class Client:
             return False, data_from_srerver["massage"]
         else:
             self.kill_connection(client_socket)
-            return True, None
+            return True, data_from_srerver["massage"]
+
+    def get_user_id_list(self):
+
 
     @staticmethod
     def kill_connection(client_socket):

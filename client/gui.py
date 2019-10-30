@@ -63,16 +63,27 @@ class Gui:
         if not success:
             self.log_in_window(massage)
         else:
-            print("log in successfully")
+            self.main_chat_window()
 
     def sign_in(self):
         success, massage = self.client.create_user(self.username.get(), self.password.get())
         if not success:
             self.sign_in_window(massage)
         else:
-            print("created a user")
+            self.log_in_window(massage)
 
-
+    def main_chat_window(self):
+        self.main_window.destroy()
+        self.main_window = tkinter.Tk()
+        self.main_window.configure(background="#3c3b40")
+        self.main_window.resizable(width=False, height=False)
+        self.main_window.geometry("700x600")
+        self.main_window.grid_columnconfigure((1, 2), weight=1)
+        user_id_list = self.client.get_user_id_list()
+        tkinter.Button(self.main_window,text="test", width=20, height=1, bg="#503c5c", font=("impact", 10),
+                       fg="black",bd=1).grid(row=1, column=0)
+        tkinter.Button(self.main_window, text="test", width=20, height=1, bg="#503c5c", font=("impact", 10),
+                       fg="black", bd=1).grid(row=2, column=0)
 
 
 g = Gui()
