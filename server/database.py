@@ -1,7 +1,7 @@
-import sqlite3
 import random
-import threading
+import sqlite3
 import string
+import threading
 
 MAX_READ = 100
 
@@ -81,15 +81,25 @@ class Database:
         self.cursor.execute(command)
         auth_code_list = self.cursor.fetchall()
         if auth_code in auth_code_list:
-            command = "SELCET id FROM account WHERE=?"
+            command = "SELECT id FROM account WHERE auth_code=?"
             self.cursor.execute(command, (auth_code,))
-            id = self.cursor.fetchall()[0]
-            return True, id
+            user_id = self.cursor.fetchall()[0]
+            return True, user_id
         else:
             return False, None
 
-    def get_id_list(self, auth_code):
-        command = "SELECT id FROM "
+    def get_id_list(self, user_id):
+        command = "SELECT id FROM account"
+        self.cursor.execute(command)
+        id_list = self.cursor.fetchall()
+        id_list.remove(user_id)
+        return id_list
+
+    def get_username_from_id(self, user_id):
+        command = "SELECT username FROM account WHERE id=?"
+        self.cursor.execute(command, (user_id,))
+        username = self.cursor.fetchall()[0]
+        return username
 
     @staticmethod
     def check_info(info):
@@ -137,6 +147,24 @@ class AsycDatabase:
         auth_code = self.database.get_auth_code(username)
         self.semaphone_lock.release()
         return auth_code
+
+    def get_id_list(self, user_id):
+        self.semaphone_lock.acquire()
+        id_list = self.database.get_id_list(user_id)
+        self.semaphone_lock.release()
+        return id_list
+
+    def authentication_user(self, auth_code):
+        self.semaphone_lock.acquire()
+        authenticated, user_id = self.database.authentication_user(auth_code)
+        self.semaphone_lock.release()
+        return authenticated, user_id
+
+    def get_username_from_id(self, user_id):
+        self.semaphone_lock.acquire()
+        username = self.database.get_username_from_id(user_id)
+        self.semaphone_lock.release()
+        return username
 
 
 def main():

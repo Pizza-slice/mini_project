@@ -6,7 +6,7 @@ from client_handler import ClientHandler
 class Server:
     def __init__(self):
         self.server_socket = socket.socket()
-        self.connected_client_list = []
+        self.connected_client_list = {}
 
     def initialize_socket(self):
         self.server_socket.bind(('0.0.0.0', 1902))
@@ -27,7 +27,7 @@ def main():
     server.initialize_socket()
     while True:
         client_socket = server.connect_clients()
-        c = ClientHandler(client_socket)
+        c = ClientHandler(client_socket, server.connected_client_list)
         c.start()
 
 
