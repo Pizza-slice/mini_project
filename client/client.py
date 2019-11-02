@@ -61,13 +61,12 @@ class Client:
         else:
             print(data_from_server["error_massage"])
 
-    def get_massages_from_server(self, client_socket=None):
+    def get_massages_from_server(self):
         data = {"type": "get-massages", "auth_code": self.auth_code}
-        if client_socket is None:
-            client_socket = self.create_connection()
+        client_socket = self.create_connection()
         self.send_data_to_server(client_socket, json.dumps(data))
         data_from_server = json.loads(self.get_data_from_server(client_socket))
-        return data_from_server, client_socket
+        return data_from_server
 
     def send_massage(self, massage, send_to="all"):
         data = {"type": "send-massage", "auth_code": self.auth_code, "to": send_to, "data": massage}

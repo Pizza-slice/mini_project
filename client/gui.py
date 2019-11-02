@@ -16,6 +16,7 @@ class Gui:
         self.username = tkinter.StringVar()
         self.password = tkinter.StringVar()
         self.text_couner = 1.0
+        self.focuse = "all"
 
     def log_in_window(self, massage):
         self.password.set('')
@@ -77,18 +78,41 @@ class Gui:
             self.log_in_window(massage)
 
     def get_new_massages(self, text):
-        data, client_socket = self.client.get_massages_from_server()
-        text.insert(str(self.text_couner),
-                    self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
-        self.text_couner += 1.0
+        data = self.client.get_massages_from_server()
+        if "to" in data:
+            if self.focuse == "all":
+                text.insert(str(self.text_couner),
+                            self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
+                self.text_couner += 1.0
+            else:
+                pass  # todo unfcouse massage
+        else:
+            if data["user_id"] == self.focuse:
+                text.insert(str(self.text_couner),
+                            self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
+                self.text_couner += 1.0
+            else:
+                pass  # todo unfcouse massage
+
         while True:
-            data = self.client.get_massages_from_server(client_socket)[0]
-            text.insert(str(self.text_couner),
-                        self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
-            self.text_couner += 1.0
+            data = self.client.get_massages_from_server()
+            if "to" in data:
+                if self.focuse == "all":
+                    text.insert(str(self.text_couner),
+                                self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
+                    self.text_couner += 1.0
+                else:
+                    pass  # todo unfcouse massage
+            else:
+                if data["user_id"] == self.focuse:
+                    text.insert(str(self.text_couner),
+                                self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
+                    self.text_couner += 1.0
+                else:
+                    pass  # todo unfcouse massage
 
     def send_massage(self, text, massage):
-        self.client.send_massage(massage)
+        self.client.send_massage(massage, send_to=self.focuse)
         text.insert(str(self.text_couner), "me: " + massage + "\n")
         text.tag_configure("right", justify='right')
         text.tag_add("right", str(self.text_couner), str(self.text_couner + 1.0))
@@ -101,18 +125,16 @@ class Gui:
         self.main_window.resizable(width=False, height=False)
         self.main_window.geometry("700x600")
         self.main_window.grid_columnconfigure((1, 2), weight=1)
+        text = tkinter.Text(self.main_window, bg="#201f24", wrap="word", fg="#ffffff")
         user_input = tkinter.StringVar()
         user_id_list = self.client.get_user_id_list()
         counter = 2
-        tkinter.Button(self.main_window, text="all", width=20, height=1, bg="#503c5c", font=("impact", 10),
-                       fg="black", bd=1).grid(row=1, column=0)
+        Chat_window("all", self, counter, text)
         for user_id in user_id_list:
-            tkinter.Button(self.main_window, text=self.client.get_username_from_id(user_id), width=20, height=1,
-                           bg="#503c5c", font=("impact", 10),
-                           fg="black", bd=1).grid(row=counter, column=0)
+            Chat_window(user_id, self, counter, text)
             counter += 1
-        text = tkinter.Text(self.main_window, bg="#201f24", wrap="word", fg="#ffffff")
         text.grid(column=1)
+        tkinter.Label(self.main_window, text="all", width=10).grid(row=1, column=1)
         entry_input = tkinter.Entry(self.main_window, width=80, textvariable=user_input)
         entry_input.grid(column=1, sticky="w", pady=22)
         enter_button = tkinter.Button(width=10, height=1, text="send",
@@ -121,6 +143,28 @@ class Gui:
         threading.Thread(target=self.get_new_massages, args=(text,)).start()
 
         self.main_window.mainloop()
+
+
+class Chat_window:
+    def __init__(self, user_id, gui, counter, text):
+        self.text = text
+        self.user_id = user_id
+        if user_id != "all":
+            self.username = gui.client.get_username_from_id(self.user_id)
+            tkinter.Button(gui.main_window, text=self.username, width=20, height=1,
+                           bg="#503c5c", font=("impact", 10),
+                           fg="black", bd=1, command=lambda: self.open_chat(gui)).grid(row=counter, column=0)
+        else:
+            self.username = "all"
+            tkinter.Button(gui.main_window, text="all", width=20, height=1,
+                           bg="#503c5c", font=("impact", 10),
+                           fg="black", bd=1, command=lambda: self.open_chat(gui)).grid(row=1, column=0)
+
+    def open_chat(self, gui):
+        self.text.delete("1.0", tkinter.INSERT)
+        gui.text_couner = 1.0
+        gui.focuse = self.user_id
+        tkinter.Label(gui.main_window, text=self.username, width=10).grid(row=1, column=1)
 
 
 g = Gui()
