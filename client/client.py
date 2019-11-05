@@ -3,12 +3,20 @@ import socket
 
 
 class Client:
+    """
+    the protocol is a json data that is have a "type" key that hold the action you want to do
+    """
     def __init__(self):
         self.ip = "127.0.0.1"
         self.port = 1902
         self.auth_code = ""
 
     def create_connection(self):
+        """
+        open a socket to the server
+        my protocol is always open and closing sockets
+        :return:
+        """
         client_socket = socket.socket()
         client_socket.connect((self.ip, self.port))
         return client_socket
