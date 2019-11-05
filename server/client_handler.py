@@ -38,8 +38,9 @@ class ClientHandler(threading.Thread):
             account_database = database.AsycDatabase("database.db")
             authenticated, user_id = account_database.authentication_user(json_data["auth_code"])
             if authenticated:
-                id_list = account_database.get_id_list(user_id)
-                self.send_data_to_client(json.dumps({"type": "success", "data": id_list}).encode())
+                user_list = list(self.connected_client_list.keys())
+                self.send_new_client_massage(user_id)
+                self.send_data_to_client(json.dumps({"type": "success", "data": user_list}).encode())
             else:
                 self.send_data_to_client(
                     json.dumps({"type": "failed", "error_massage": "unauthenticated user"}).encode())
@@ -62,20 +63,25 @@ class ClientHandler(threading.Thread):
             authenticated, user_id = account_database.authentication_user(json_data["auth_code"])
             if authenticated:
                 if json_data["to"] == "all":
-                    data = {"user_id": user_id, "massage": json_data["data"], "to": "all"}
+                    data = {"type": "massage", "user_id": user_id, "massage": json_data["data"], "to": "all"}
                     for user in self.connected_client_list:
                         if user != user_id:
                             self.connected_client_list[user].send(json.dumps(data).encode())
                     data = {"type": "success"}
                     self.send_data_to_client(json.dumps(data).encode())
                 else:
-                    data = {"user_id": user_id, "massage": json_data["data"]}
+                    data = {"type": "massage", "user_id": user_id, "massage": json_data["data"]}
                     self.connected_client_list[json_data["to"]].send(json.dumps(data).encode())
                     data = {"type": "success"}
                     self.send_data_to_client(json.dumps(data).encode())
             else:
                 self.send_data_to_client(
                     json.dumps({"type": "failed", "error_massage": "unauthenticated user"}).encode())
+
+    def send_new_client_massage(self, user_id):
+        data = {"type": "new-user", "user_id": user_id}
+        for user_id in self.connected_client_list:
+            self.connected_client_list[user_id].send(json.dumps(data).encode())
 
 
 def main():

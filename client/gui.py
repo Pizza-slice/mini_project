@@ -17,6 +17,7 @@ class Gui:
         self.password = tkinter.StringVar()
         self.text_couner = 1.0
         self.focuse = "all"
+        self.counter = 2
 
     def log_in_window(self, massage):
         self.password.set('')
@@ -79,37 +80,36 @@ class Gui:
 
     def get_new_massages(self, text):
         data = self.client.get_massages_from_server()
-        if "to" in data:
-            if self.focuse == "all":
-                text.insert(str(self.text_couner),
-                            self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
-                self.text_couner += 1.0
-            else:
-                pass  # todo unfcouse massage
-        else:
-            if data["user_id"] == self.focuse:
-                text.insert(str(self.text_couner),
-                            self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
-                self.text_couner += 1.0
-            else:
-                pass  # todo unfcouse massage
-
-        while True:
-            data = self.client.get_massages_from_server()
+        if data["type"] == "massage":
             if "to" in data:
                 if self.focuse == "all":
                     text.insert(str(self.text_couner),
                                 self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
                     self.text_couner += 1.0
-                else:
-                    pass  # todo unfcouse massage
             else:
                 if data["user_id"] == self.focuse:
                     text.insert(str(self.text_couner),
                                 self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
                     self.text_couner += 1.0
+        else:
+            Chat_window(data["user_id"], self, self.counter, text)
+            self.counter += 1
+        while True:
+            data = self.client.get_massages_from_server()
+            if data["type"] == "massage":
+                if "to" in data:
+                    if self.focuse == "all":
+                        text.insert(str(self.text_couner),
+                                    self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
+                        self.text_couner += 1.0
                 else:
-                    pass  # todo unfcouse massage
+                    if data["user_id"] == self.focuse:
+                        text.insert(str(self.text_couner),
+                                    self.client.get_username_from_id(data["user_id"]) + ": " + data["massage"] + "\n")
+                        self.text_couner += 1.0
+            else:
+                Chat_window(data["user_id"], self, self.counter, text)
+                self.counter += 1
 
     def send_massage(self, text, massage):
         self.client.send_massage(massage, send_to=self.focuse)
@@ -128,18 +128,17 @@ class Gui:
         text = tkinter.Text(self.main_window, bg="#201f24", wrap="word", fg="#ffffff")
         user_input = tkinter.StringVar()
         user_id_list = self.client.get_user_id_list()
-        counter = 2
-        Chat_window("all", self, counter, text)
+        Chat_window("all", self, self.counter, text)
         for user_id in user_id_list:
-            Chat_window(user_id, self, counter, text)
-            counter += 1
+            Chat_window(user_id, self, self.counter, text)
+            self.counter += 1
         text.grid(column=1)
         tkinter.Label(self.main_window, text="all", width=10).grid(row=1, column=1)
         entry_input = tkinter.Entry(self.main_window, width=80, textvariable=user_input)
         entry_input.grid(column=1, sticky="w", pady=22)
         enter_button = tkinter.Button(width=10, height=1, text="send",
                                       command=lambda: (self.send_massage(text, user_input.get())))
-        enter_button.grid(row=counter + 1, column=1, sticky="e")
+        enter_button.grid(row=self.counter + 1, column=1, sticky="e")
         threading.Thread(target=self.get_new_massages, args=(text,)).start()
 
         self.main_window.mainloop()
